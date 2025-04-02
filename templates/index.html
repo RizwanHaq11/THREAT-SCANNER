@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THREAT SCANNER</title>
+  <style>
+    body {
+      color: white;
+      background-color: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      transition: background-color 0.5s ease;
+    }
+
+    h1 {
+      font-family: Impact, fantasy, sans-serif;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    #scanForm {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 1rem;
+      border: 2px solid #2ed573;
+      border-radius: 5px;
+      background-color: #222;
+      color: white;
+      text-align: center;
+    }
+
+    .button {
+      --main-color: rgb(46, 213, 115);
+      --main-bg-color: rgba(46, 213, 116, 0.36);
+      --pattern-color: rgba(46, 213, 116, 0.073);
+      
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1rem;
+      background: radial-gradient(
+          circle,
+          var(--main-bg-color) 0%,
+          rgba(0, 0, 0, 0) 95%
+        ),
+        linear-gradient(var(--pattern-color) 1px, transparent 1px),
+        linear-gradient(to right, var(--pattern-color) 1px, transparent 1px);
+      background-size: cover, 15px 15px, 15px 15px;
+      border: 2px solid var(--main-color);
+      color: var(--main-color);
+      padding: 10px 20px;
+      font-weight: bold;
+      font-size: 1rem;
+      border-radius: 5px;
+      transition: background-size 0.2s ease-in-out, transform 0.2s;
+    }
+
+    .button:hover {
+      background-size: cover, 10px 10px, 10px 10px;
+      transform: scale(1.05);
+    }
+
+    .button:active {
+      filter: hue-rotate(250deg);
+    }
+  </style>
+</head>
+<body>
+    <h1>T H R E A T   -||-  S C A N N E R</h1>
+    <form id="scanForm">
+        <input type="text" id="ipInput" placeholder="Enter IP Address" required><br>
+        <button type="submit" class="button">Scan</button>
+    </form>
+    <p id="result"></p>
+    
+    <script>
+        document.getElementById("scanForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const ipInput = document.getElementById("ipInput").value;
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "Scanning... ⏳";
+            document.body.style.backgroundColor = "black";
+            fetch("/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ip: ipInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                    return;
+                }
+                let abuseScore = data.AbuseIPDB?.data?.abuseConfidenceScore || 0;
+                let vtMalicious = data.VirusTotal?.data?.attributes?.last_analysis_stats?.malicious || 0;
+                let threatLevel = "Safe ✅";
+                let bgColor = "green";
+                if (abuseScore > 50 || vtMalicious > 0) {
+                    threatLevel = "Malicious 🚨";
+                    bgColor = "#8B0000"; // Cherry red
+                } else if (abuseScore > 10 || vtMalicious > 0) {
+                    threatLevel = "Suspicious ⚠️";
+                    bgColor = "#FFA500"; // Orange for warning
+                }
+                resultDiv.innerHTML = `<strong>Threat Level:</strong> ${threatLevel}`;
+                document.body.style.backgroundColor = bgColor;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                resultDiv.innerHTML = "Error scanning. Please try again.";
+            });
+        });
+    </script>
+</body>
+</html>
